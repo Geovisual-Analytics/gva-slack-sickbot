@@ -1,7 +1,9 @@
 export const runtime = 'nodejs';
+export const maxDuration = 60; // Allow up to 60 seconds for the background task
 
 import crypto from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import { after } from 'next/server';
 
 /** Slack signature verification */
 function verifySlackSignature({
@@ -81,11 +83,11 @@ export async function POST(req: Request) {
     },
   );
 
-  // Async background task
+  // Async background task using Next.js after() to keep it alive on Vercel
   if (responseUrl) {
-    console.log('Starting async task with response_url:', responseUrl);
-    const backgroundTask = (async () => {
+    after(async () => {
       try {
+        console.log('Starting background task with response_url:', responseUrl);
         console.log('Calling Claude API...');
         console.log('User input:', userInput);
         console.log('Claude API key present:', !!claudeKey);
@@ -157,11 +159,8 @@ export async function POST(req: Request) {
           console.error('Failed to send error response to Slack:', fetchErr);
         }
       }
-      console.log('Async task completed');
-    })();
-
-    // Keep the background task alive (Next.js App Router)
-    backgroundTask.catch((err) => console.error('Background task error:', err));
+      console.log('Background task completed');
+    });
   }
 
   return ack;
