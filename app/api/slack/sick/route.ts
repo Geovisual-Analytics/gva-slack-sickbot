@@ -76,7 +76,7 @@ export async function POST(req: Request) {
   // Immediate ACK (Slack requires <3s)
   const ack = new Response(
     JSON.stringify({
-      response_type: 'in_channel',
+      response_type: 'ephemeral',
       text: '_Calibrating immune system..._',
     }),
     {
@@ -107,14 +107,15 @@ Create a response with TWO parts:
    - Never mention real illnesses
    - Use "${userMention}" exactly as provided (do not modify it)
 
-2. Second paragraph: Write a third-person status update about their work, as if YOU are reporting on what THEY did/are doing.
+2. Second paragraph: Write a clear third-person status update about their work, with light corporate jargon.
    - Use third person pronouns (they/them/their) to refer to the person
-   - Example tone: "They have been driving alignment on..." NOT "I have been driving alignment..."
-   - Take the information they provided and describe it with overly corporate jargon
-   - Stay close to what they actually said - preserve key details and context
-   - Add buzzwords like: "drove alignment", "accelerated value delivery", "proactively de-risked", "stakeholder visibility"
-   - Keep it 2-5 sentences, under 700 characters
-   - If they mentioned specific work, keep those specifics but make them sound corporate
+   - PRIORITY: Make it CLEAR what they actually did or are working on - don't obscure the details
+   - Keep the specific tasks, projects, technologies, or work items they mentioned
+   - Add some corporate buzzwords for humor, but don't replace concrete details with vague buzzwords
+   - Example: If they said "fixed the login bug", say "They successfully resolved critical authentication defects" NOT just "drove quality initiatives"
+   - Example: If they said "working on the API", say "They are accelerating delivery of the API integration" NOT just "driving alignment"
+   - Keep it 2-4 sentences, under 600 characters
+   - Balance humor with clarity - the message should be funny but still informative
 
 Separate the two parts with a blank line. Use plain text only (no markdown, no quotes, no labels).`;
 
@@ -149,7 +150,6 @@ Separate the two parts with a blank line. Use plain text only (no markdown, no q
             headers: { 'content-type': 'application/json; charset=utf-8' },
             body: JSON.stringify({
               response_type: 'in_channel',
-              replace_original: true,
               text,
             }),
           });
@@ -167,7 +167,6 @@ Separate the two parts with a blank line. Use plain text only (no markdown, no q
             headers: { 'content-type': 'application/json; charset=utf-8' },
             body: JSON.stringify({
               response_type: 'in_channel',
-              replace_original: true,
               text: 'Feeling under the weather but continuing to synergize strategically pending AI recovery.',
             }),
           });
