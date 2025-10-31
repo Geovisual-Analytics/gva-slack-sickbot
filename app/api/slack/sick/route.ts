@@ -76,7 +76,7 @@ export async function POST(req: Request) {
   // Immediate ACK (Slack requires <3s)
   const ack = new Response(
     JSON.stringify({
-      response_type: 'ephemeral',
+      response_type: 'in_channel',
       text: '_Calibrating immune system..._',
     }),
     {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         const anthropic = new Anthropic({ apiKey: claudeKey });
 
         const prompt = `
-You are helping format a sick day message for Slack. The user provided this message:
+You are helping format a sick day message for Slack. The user provided this message about their work:
 """${userInput || '(no notes provided)'}"""
 
 Create a response with TWO parts:
@@ -107,7 +107,10 @@ Create a response with TWO parts:
    - Never mention real illnesses
    - Use "${userMention}" exactly as provided (do not modify it)
 
-2. Second paragraph: Take their original message and rewrite it with overly corporate jargon while keeping the same basic meaning and information they provided.
+2. Second paragraph: Write a third-person status update about their work, as if YOU are reporting on what THEY did/are doing.
+   - Use third person pronouns (they/them/their) to refer to the person
+   - Example tone: "They have been driving alignment on..." NOT "I have been driving alignment..."
+   - Take the information they provided and describe it with overly corporate jargon
    - Stay close to what they actually said - preserve key details and context
    - Add buzzwords like: "drove alignment", "accelerated value delivery", "proactively de-risked", "stakeholder visibility"
    - Keep it 2-5 sentences, under 700 characters
