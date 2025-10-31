@@ -136,7 +136,7 @@ export async function POST(req: Request) {
           const slackResponse = await fetch(responseUrl, {
             method: 'POST',
             headers: { 'content-type': 'application/json; charset=utf-8' },
-            body: JSON.stringify({ response_type: 'ephemeral', text }),
+            body: JSON.stringify({ response_type: 'in_channel', text }),
           });
           console.log('Slack response status:', slackResponse.status);
           const responseText = await slackResponse.text();
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
             method: 'POST',
             headers: { 'content-type': 'application/json; charset=utf-8' },
             body: JSON.stringify({
-              response_type: 'ephemeral',
+              response_type: 'in_channel',
               text: 'Feeling under the weather but continuing to synergize strategically pending AI recovery.',
             }),
           });
