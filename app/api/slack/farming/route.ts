@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const userInput = (params.get('text') ?? '').trim();
 
   // Immediate ACK (Slack requires <3s)
-  const ack = createAckResponse('_Consulting the almanac..._');
+  const ack = createAckResponse('_Consulting the almanac..._', 'in_channel');
 
   // Async background task using Next.js after() to keep it alive on Vercel
   if (responseUrl) {
@@ -79,7 +79,13 @@ Keep it short, punchy, and funny. Output plain text only (no markdown, no quotes
 
         console.log('Claude response:', text);
         console.log('Sending response to Slack...');
-        await sendSlackMessage(responseUrl, `🚜 ${text}`, 'in_channel');
+
+        // Format the response with the user's query if provided
+        const formattedText = userInput
+          ? `🚜 *Farming Advice: ${userInput}*\n\n${text}`
+          : `🚜 ${text}`;
+
+        await sendSlackMessage(responseUrl, formattedText, 'in_channel');
       } catch (err) {
         console.error('Claude error:', err);
         try {
