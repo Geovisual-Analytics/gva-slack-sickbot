@@ -1,5 +1,5 @@
 export const runtime = 'nodejs';
-export const maxDuration = 60; // Allow up to 60 seconds for the background task
+export const maxDuration = 60;
 
 import Anthropic from '@anthropic-ai/sdk';
 import { after } from 'next/server';
@@ -21,51 +21,44 @@ export async function POST(req: Request) {
   const params = new URLSearchParams(rawBody);
   const responseUrl = params.get('response_url');
   const userInput = (params.get('text') ?? '').trim();
-  const userId = params.get('user_id');
-  const userMention = userId ? `<@${userId}>` : 'Someone';
 
   // Immediate ACK (Slack requires <3s)
-  const ack = createAckResponse('_Calibrating immune system..._');
+  const ack = createAckResponse('_Consulting the almanac..._');
 
   // Async background task using Next.js after() to keep it alive on Vercel
   if (responseUrl) {
     after(async () => {
       try {
-        console.log('Starting background task with response_url:', responseUrl);
-        console.log('Calling Claude API...');
+        console.log('Starting farming advice background task');
         console.log('User input:', userInput);
         console.log('Claude API key present:', !!claudeKey);
         const anthropic = new Anthropic({ apiKey: claudeKey });
 
         const prompt = `
-You are helping format a sick day message for Slack. The user provided this message about their work:
-"""${userInput || '(no notes provided)'}"""
+You are a quirky farming advisor giving hilariously bad (or occasionally accurate) farming advice.
 
-Create a response with TWO parts:
+The user asked: """${userInput || 'general farming advice'}"""
 
-1. First line: Start with "${userMention} is out sick today" then add a brief, funny workplace-safe reason in parentheses.
-   - Examples: "(caught a severe case of meetings)", "(overexposed to synergy)", "(PowerPoint poisoning)"
-   - Keep it short and absurd but harmless
-   - Never mention real illnesses
-   - Use "${userMention}" exactly as provided (do not modify it)
+Generate a short piece of farming advice (2-4 sentences) that is:
+- Absurdly funny but workplace-safe
+- May or may not be accurate (mix of real and ridiculous)
+- Delivered in a deadpan, serious tone as if it's legitimate advice
+- Can include specific crops, animals, techniques, weather wisdom, etc.
+- Sometimes completely wrong in hilarious ways
+- Sometimes accidentally correct but explained weirdly
 
-2. Second paragraph: Write a clear third-person status update about their work, with light corporate jargon.
-   - Use third person pronouns (they/them/their) to refer to the person
-   - PRIORITY: Make it CLEAR what they actually did or are working on - don't obscure the details
-   - Keep the specific tasks, projects, technologies, or work items they mentioned
-   - Add some corporate buzzwords for humor, but don't replace concrete details with vague buzzwords
-   - Example: If they said "fixed the login bug", say "They successfully resolved critical authentication defects" NOT just "drove quality initiatives"
-   - Example: If they said "working on the API", say "They are accelerating delivery of the API integration" NOT just "driving alignment"
-   - Keep it 2-4 sentences, under 600 characters
-   - Balance humor with clarity - the message should be funny but still informative
+Examples of the tone:
+- "Remember: cows prefer jazz music during milking, but only on Tuesdays. Classical music will curdle the milk."
+- "Plant your tomatoes during a full moon while wearing rubber boots. The boots don't help the tomatoes, but they'll keep your feet dry."
+- "Chickens are actually solar-powered. That's why they wake up with the sun. Common mistake is trying to charge them with USB."
 
-Separate the two parts with a blank line. Use plain text only (no markdown, no quotes, no labels).`;
+Keep it short, punchy, and funny. Output plain text only (no markdown, no quotes, no labels).`;
 
         console.log('Making API request...');
         const apiPromise = anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
-          max_tokens: 500,
-          temperature: 1,
+          max_tokens: 300,
+          temperature: 1.2,
           messages: [{ role: 'user', content: prompt }],
         });
 
@@ -86,13 +79,13 @@ Separate the two parts with a blank line. Use plain text only (no markdown, no q
 
         console.log('Claude response:', text);
         console.log('Sending response to Slack...');
-        await sendSlackMessage(responseUrl, text, 'in_channel');
+        await sendSlackMessage(responseUrl, `🚜 ${text}`, 'in_channel');
       } catch (err) {
         console.error('Claude error:', err);
         try {
           await sendSlackMessage(
             responseUrl,
-            'Feeling under the weather but continuing to synergize strategically pending AI recovery.',
+            '🚜 The crops have failed. Try rotating your keyboard 90 degrees and planting again.',
             'in_channel',
           );
         } catch (fetchErr) {
