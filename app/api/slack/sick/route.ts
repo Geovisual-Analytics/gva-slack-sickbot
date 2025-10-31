@@ -70,6 +70,8 @@ export async function POST(req: Request) {
   const params = new URLSearchParams(rawBody);
   const responseUrl = params.get('response_url');
   const userInput = (params.get('text') ?? '').trim();
+  const userId = params.get('user_id');
+  const userMention = userId ? `<@${userId}>` : 'Someone';
 
   // Immediate ACK (Slack requires <3s)
   const ack = new Response(
@@ -94,18 +96,24 @@ export async function POST(req: Request) {
         const anthropic = new Anthropic({ apiKey: claudeKey });
 
         const prompt = `
-            You take a short Slack message from someone who is *home sick* and rewrite it as:
-            1. A single-sentence funny, harmless reason for why they're sick.
-              - Absurd but workplace-safe (e.g., "caught a severe case of meetings", "overexposed to synergy").
-              - Never mention real illnesses or gross details.
-            2. A second paragraph of *overly corporate jargon* expanding on their work.
-              - Same meaning, just drenched in corporate buzzwords like:
-                "drove alignment", "accelerated value delivery", "proactively de-risked", "stakeholder visibility", etc.
-              - 3–6 sentences max.
-              - Single paragraph total under 900 characters.
-            3. Output both parts as plain text, separated by a blank line.
-            Do not include markdown formatting, quotes, or labels.
-            User's input: """${userInput || '(no notes provided)'}"""`;
+You are helping format a sick day message for Slack. The user provided this message:
+"""${userInput || '(no notes provided)'}"""
+
+Create a response with TWO parts:
+
+1. First line: Start with "${userMention} is out sick today" then add a brief, funny workplace-safe reason in parentheses.
+   - Examples: "(caught a severe case of meetings)", "(overexposed to synergy)", "(PowerPoint poisoning)"
+   - Keep it short and absurd but harmless
+   - Never mention real illnesses
+   - Use "${userMention}" exactly as provided (do not modify it)
+
+2. Second paragraph: Take their original message and rewrite it with overly corporate jargon while keeping the same basic meaning and information they provided.
+   - Stay close to what they actually said - preserve key details and context
+   - Add buzzwords like: "drove alignment", "accelerated value delivery", "proactively de-risked", "stakeholder visibility"
+   - Keep it 2-5 sentences, under 700 characters
+   - If they mentioned specific work, keep those specifics but make them sound corporate
+
+Separate the two parts with a blank line. Use plain text only (no markdown, no quotes, no labels).`;
 
         console.log('Making API request...');
         const apiPromise = anthropic.messages.create({
@@ -136,7 +144,11 @@ export async function POST(req: Request) {
           const slackResponse = await fetch(responseUrl, {
             method: 'POST',
             headers: { 'content-type': 'application/json; charset=utf-8' },
-            body: JSON.stringify({ response_type: 'in_channel', text }),
+            body: JSON.stringify({
+              response_type: 'in_channel',
+              replace_original: true,
+              text,
+            }),
           });
           console.log('Slack response status:', slackResponse.status);
           const responseText = await slackResponse.text();
@@ -152,6 +164,7 @@ export async function POST(req: Request) {
             headers: { 'content-type': 'application/json; charset=utf-8' },
             body: JSON.stringify({
               response_type: 'in_channel',
+              replace_original: true,
               text: 'Feeling under the weather but continuing to synergize strategically pending AI recovery.',
             }),
           });
