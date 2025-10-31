@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   // Async background task
   if (responseUrl) {
     console.log('Starting async task with response_url:', responseUrl);
-    (async () => {
+    const backgroundTask = (async () => {
       try {
         console.log('Calling Claude API...');
         console.log('User input:', userInput);
@@ -106,20 +106,28 @@ export async function POST(req: Request) {
             User's input: """${userInput || '(no notes provided)'}"""`;
 
         console.log('Making API request...');
-        const response = await anthropic.messages.create({
+        const apiPromise = anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 500,
           temperature: 1,
           messages: [{ role: 'user', content: prompt }],
         });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Claude API timeout after 45s')),
+            45000,
+          ),
+        );
+
+        const response = await Promise.race([apiPromise, timeoutPromise]);
         console.log('API request completed');
 
-        
         const text = response.content
-        .map((c: object) => ('text' in c ? c.text : ''))
-        .join('')
-        .trim();
-        
+          .map((c: object) => ('text' in c ? c.text : ''))
+          .join('')
+          .trim();
+
         console.log('Claude response:', text);
         console.log('Sending response to Slack...');
         try {
@@ -151,6 +159,9 @@ export async function POST(req: Request) {
       }
       console.log('Async task completed');
     })();
+
+    // Keep the background task alive (Next.js App Router)
+    backgroundTask.catch((err) => console.error('Background task error:', err));
   }
 
   return ack;
