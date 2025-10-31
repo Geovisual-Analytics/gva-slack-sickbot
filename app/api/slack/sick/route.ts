@@ -87,11 +87,13 @@ export async function POST(req: Request) {
     (async () => {
       try {
         console.log('Calling Claude API...');
+        console.log('User input:', userInput);
+        console.log('Claude API key present:', !!claudeKey);
         const anthropic = new Anthropic({ apiKey: claudeKey });
 
         const prompt = `
             You take a short Slack message from someone who is *home sick* and rewrite it as:
-            1. A single-sentence funny, harmless reason for why they’re sick.
+            1. A single-sentence funny, harmless reason for why they're sick.
               - Absurd but workplace-safe (e.g., "caught a severe case of meetings", "overexposed to synergy").
               - Never mention real illnesses or gross details.
             2. A second paragraph of *overly corporate jargon* expanding on their work.
@@ -101,14 +103,16 @@ export async function POST(req: Request) {
               - Single paragraph total under 900 characters.
             3. Output both parts as plain text, separated by a blank line.
             Do not include markdown formatting, quotes, or labels.
-            User’s input: """${userInput || '(no notes provided)'}"""`;
+            User's input: """${userInput || '(no notes provided)'}"""`;
 
+        console.log('Making API request...');
         const response = await anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 500,
           temperature: 1,
           messages: [{ role: 'user', content: prompt }],
         });
+        console.log('API request completed');
 
         
         const text = response.content
