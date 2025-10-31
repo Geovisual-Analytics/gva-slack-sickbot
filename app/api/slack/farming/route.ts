@@ -58,7 +58,7 @@ Keep it short, punchy, and funny. Output plain text only (no markdown, no quotes
         const apiPromise = anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 300,
-          temperature: 1.2,
+          temperature: 1,
           messages: [{ role: 'user', content: prompt }],
         });
 
