@@ -81,12 +81,7 @@ Output ONLY emojis, no other text or explanation.`;
         console.log('Claude response:', emojis);
         console.log('Sending response to Slack...');
 
-        // Format the response with the original message
-        const formattedText = userInput
-          ? `💬 _"${userInput}"_\n\n${emojis}`
-          : emojis;
-
-        await sendSlackMessage(responseUrl, formattedText, 'in_channel');
+        await sendSlackMessage(responseUrl, emojis, 'in_channel');
       } catch (err) {
         console.error('Claude error:', err);
         try {
