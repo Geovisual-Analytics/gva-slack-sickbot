@@ -83,8 +83,10 @@ export async function POST(req: Request) {
 
   // Async background task
   if (responseUrl) {
+    console.log('Starting async task with response_url:', responseUrl);
     (async () => {
       try {
+        console.log('Calling Claude API...');
         const anthropic = new Anthropic({ apiKey: claudeKey });
 
         const prompt = `
@@ -114,13 +116,17 @@ export async function POST(req: Request) {
         .join('')
         .trim();
         
-        console.log(text);
+        console.log('Claude response:', text);
+        console.log('Sending response to Slack...');
         try {
-          await fetch(responseUrl, {
+          const slackResponse = await fetch(responseUrl, {
             method: 'POST',
             headers: { 'content-type': 'application/json; charset=utf-8' },
             body: JSON.stringify({ response_type: 'ephemeral', text }),
           });
+          console.log('Slack response status:', slackResponse.status);
+          const responseText = await slackResponse.text();
+          console.log('Slack response body:', responseText);
         } catch (fetchErr) {
           console.error('Failed to send response to Slack:', fetchErr);
         }
@@ -139,6 +145,7 @@ export async function POST(req: Request) {
           console.error('Failed to send error response to Slack:', fetchErr);
         }
       }
+      console.log('Async task completed');
     })();
   }
 
